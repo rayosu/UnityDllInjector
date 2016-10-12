@@ -1,4 +1,20 @@
-#if UNITY_4 || UNITY_4_1 || UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6 || UNITY_4_7 || UNITY_4_8 || UNITY_4_9
+// /*
+// * ==============================================================================
+// *
+// * Description: IL´úÂë×¢ÈëÆ÷
+// *
+// * https://github.com/rayosu/UnityDllInjector
+// *
+// * Version: 1.0
+// * Created: 2016-10-12 17:50
+// *
+// * Author: Surui (76963802@qq.com)
+// * Company: WYD
+// *
+// * ==============================================================================
+// */
+#if UNITY_4 || UNITY_4_1 || UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6 || UNITY_4_7 || UNITY_4_8 ||
+    UNITY_4_9
 #define UNITY_4_X
 #endif
 
@@ -50,10 +66,7 @@ public static class CodeInjector
 
     public static bool CreateBackup
     {
-        set
-        {
-            EditorPrefs.SetBool(_projectName + "CodeInjector CreateBackup", value);
-        }
+        set { EditorPrefs.SetBool(_projectName + "CodeInjector CreateBackup", value); }
         get { return EditorPrefs.GetBool(_projectName + "CodeInjector CreateBackup", true); }
     }
 
@@ -109,7 +122,7 @@ public static class CodeInjector
         float progress = 0.0f;
         EditorUtility.DisplayProgressBar("CodeInjector", "Obfuscating and protecting code...", progress);
 
-        CodeInjectorSetup setup = CodeInjector.CodeInjectorSetupSettings();
+        CodeInjectorSetup setup = CodeInjectorSetupSettings();
 
         string[] files = Directory.GetFiles(fromPath, "*.dll", SearchOption.TopDirectoryOnly);
         for (int index = 0; index < files.Length; index++)
@@ -140,6 +153,7 @@ public static class CodeInjector
     {
         DoCodeInjectorFolder(folderPath, false);
     }
+
     public static void DoCodeInjectorFolder(string folderPath, bool createBackup)
     {
         DirectoryInfo assemblyDir = new DirectoryInfo(folderPath);
@@ -162,8 +176,8 @@ public static class CodeInjector
         codeInjectoredDir.Delete(true);
 
         Debug.Log(CodeInjectorReporter.LoggedError
-                      ? "CodeInjector: Failed to injector and generate the assemblies."
-                      : "CodeInjector: Finished injectoring and generating assemblies.");
+            ? "CodeInjector: Failed to injector and generate the assemblies."
+            : "CodeInjector: Finished injectoring and generating assemblies.");
     }
 
     private static bool DoCodeInjectorBuild(string plaformTag)
@@ -214,8 +228,11 @@ public static class CodeInjector
         Debug.Log("PostProcessBuild::OnPostprocessBuildPlayer");
 
 #if UNITY_4_X
-        bool windowsOrLinux = (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64 ||
-                               buildTarget == BuildTarget.StandaloneLinux || buildTarget == BuildTarget.StandaloneLinux64 || buildTarget == BuildTarget.StandaloneLinuxUniversal);
+        bool windowsOrLinux = (buildTarget == BuildTarget.StandaloneWindows ||
+                               buildTarget == BuildTarget.StandaloneWindows64 ||
+                               buildTarget == BuildTarget.StandaloneLinux ||
+                               buildTarget == BuildTarget.StandaloneLinux64 ||
+                               buildTarget == BuildTarget.StandaloneLinuxUniversal);
 #else
         bool windowsOrLinux = (buildTarget == BuildTarget.StandaloneWindows ||
                                buildTarget == BuildTarget.StandaloneWindows64);
@@ -233,7 +250,8 @@ public static class CodeInjector
                 DirectoryInfo backupDir = new DirectoryInfo(dataDir.FullName + " Backup");
                 if (!CopyFilesFromDirectory(dataDir, backupDir, true))
                 {
-                    Debug.LogError("CodeInjector: Failed to create backup, stopping post-build injection and protection.");
+                    Debug.LogError(
+                        "CodeInjector: Failed to create backup, stopping post-build injection and protection.");
                     return;
                 }
             }
@@ -253,7 +271,8 @@ public static class CodeInjector
                 DirectoryInfo backupDir = new DirectoryInfo(buildFileInfo.FullName + " Backup");
                 if (!CopyFilesFromDirectory(appDir, backupDir, true))
                 {
-                    Debug.LogError("CodeInjector: Failed to create backup, stopping post-build injection and protection.");
+                    Debug.LogError(
+                        "CodeInjector: Failed to create backup, stopping post-build injection and protection.");
                     return;
                 }
             }
@@ -328,13 +347,14 @@ public static class CodeInjector
     {
         return CopyFilesFromDirectory(source, destination, false, true);
     }
+
     private static bool CopyFilesFromDirectory(DirectoryInfo source, DirectoryInfo destination, bool copyDirectories)
     {
         return CopyFilesFromDirectory(source, destination, copyDirectories, true);
     }
 
     private static bool CopyFilesFromDirectory(DirectoryInfo source, DirectoryInfo destination,
-                                               bool copyDirectories, bool replace)
+        bool copyDirectories, bool replace)
     {
         if (!source.Exists)
         {
@@ -353,7 +373,7 @@ public static class CodeInjector
         {
             FileInfo file = files[index];
             file.CopyTo(Path.Combine(destination.FullName,
-                                     file.Name), replace);
+                file.Name), replace);
         }
 
         if (copyDirectories)

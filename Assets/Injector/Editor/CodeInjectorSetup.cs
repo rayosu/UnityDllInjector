@@ -1,3 +1,19 @@
+// /*
+// * ==============================================================================
+// *
+// * Description: IL注入核心处理, 可根据实际需求修改 DoInjectMethod 中的IL指令
+// *
+// * https://github.com/rayosu/UnityDllInjector
+// *
+// * Version: 1.0
+// * Created: 2016-10-12 17:50
+// *
+// * Author: Surui (76963802@qq.com)
+// * Company: WYD
+// *
+// * ==============================================================================
+// */
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -62,7 +78,7 @@ public class CodeInjectorSetup
         var outPath = Path.Combine(OutputDirectory, Path.GetFileName(path));
         Debug.Log(string.Format("WriteAssembly: {0}", outPath));
 
-        var writerParameters = new WriterParameters { WriteSymbols = true };
+        var writerParameters = new WriterParameters {WriteSymbols = true};
         assembly.Write(outPath, writerParameters);
     }
 
@@ -103,7 +119,7 @@ public class CodeInjectorSetup
         var worker = method.Body.GetILProcessor();
 
         // bool result = LuaPatch.HasPatch(type.Name)
-        var hasPatchRef = assembly.MainModule.Import(typeof(LuaPatch).GetMethod("HasPatch"));
+        var hasPatchRef = assembly.MainModule.Import(typeof (LuaPatch).GetMethod("HasPatch"));
         var current = InsertBefore(worker, firstIns, worker.Create(OpCodes.Ldstr, type.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, method.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Call, hasPatchRef));
@@ -112,13 +128,14 @@ public class CodeInjectorSetup
         current = InsertAfter(worker, current, worker.Create(OpCodes.Brfalse, firstIns));
 
         // else LuaPatch.CallPatch(type.Name, method.Name, args)
-        var callPatchRef = assembly.MainModule.Import(typeof(LuaPatch).GetMethod("CallPatch"));
+        var callPatchRef = assembly.MainModule.Import(typeof (LuaPatch).GetMethod("CallPatch"));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, type.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, method.Name));
         var paramsCount = method.Parameters.Count;
         // 创建 args参数 object[] 集合
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldc_I4, paramsCount));
-        current = InsertAfter(worker, current, worker.Create(OpCodes.Newarr, assembly.MainModule.Import(typeof(object))));
+        current = InsertAfter(worker, current,
+            worker.Create(OpCodes.Newarr, assembly.MainModule.Import(typeof (object))));
         for (int index = 0; index < paramsCount; index++)
         {
             var argIndex = method.IsStatic ? index : index + 1;
@@ -140,8 +157,9 @@ public class CodeInjectorSetup
         // 重新计算语句位置偏移值
         ComputeOffsets(method.Body);
     }
+
     /// <summary>
-    /// 语句前插入Instruction, 并返回当前语句
+    ///     语句前插入Instruction, 并返回当前语句
     /// </summary>
     private static Instruction InsertBefore(ILProcessor worker, Instruction target, Instruction instruction)
     {
@@ -150,7 +168,7 @@ public class CodeInjectorSetup
     }
 
     /// <summary>
-    /// 语句后插入Instruction, 并返回当前语句
+    ///     语句后插入Instruction, 并返回当前语句
     /// </summary>
     private static Instruction InsertAfter(ILProcessor worker, Instruction target, Instruction instruction)
     {

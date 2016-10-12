@@ -1,0 +1,5 @@
+源码对应分享文章:http://www.jianshu.com/p/4bef7f66aefd
+
+一些说明:
+1.导入工程后, 只需要在LuaPatch中编写你想要的lua执行逻辑
+2.dll的注入, 只在打包时触发, 如果希望编辑器状态下也执行, 点击菜单 DllInjector/Run, 注意不要对dll进行多次注入

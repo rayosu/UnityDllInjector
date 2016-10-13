@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using UnityEngine;
@@ -142,7 +141,19 @@ public class CodeInjectorSetup
             // 压入参数
             current = InsertAfter(worker, current, worker.Create(OpCodes.Dup));
             current = InsertAfter(worker, current, worker.Create(OpCodes.Ldc_I4, index));
-            current = InsertAfter(worker, current, worker.Create(OpCodes.Ldarg, argIndex));
+            var paramType = method.Parameters[index].ParameterType;
+            // 获取参数类型定义, 用来区分是否枚举类 [若你所使用的类型不在本assembly, 则此处需要遍历其他assembly以取得TypeDefinition]
+            var paramTypeDef = assembly.MainModule.GetType(paramType.FullName);
+            // 这里很重要, 需要判断出 值类型数据(不包括枚举) 是不需要拆箱的
+            if (paramType.IsValueType && (paramTypeDef == null || !paramTypeDef.IsEnum))
+            {
+                current = InsertAfter(worker, current, worker.Create(OpCodes.Ldarg, argIndex));
+            }
+            else
+            {
+                current = InsertAfter(worker, current, worker.Create(OpCodes.Ldarg, argIndex));
+                current = InsertAfter(worker, current, worker.Create(OpCodes.Box, paramType));
+            }
             current = InsertAfter(worker, current, worker.Create(OpCodes.Stelem_Ref));
         }
         current = InsertAfter(worker, current, worker.Create(OpCodes.Call, callPatchRef));

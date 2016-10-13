@@ -78,7 +78,7 @@ public class CodeInjectorSetup
         var outPath = Path.Combine(OutputDirectory, Path.GetFileName(path));
         Debug.Log(string.Format("WriteAssembly: {0}", outPath));
 
-        var writerParameters = new WriterParameters {WriteSymbols = true};
+        var writerParameters = new WriterParameters { WriteSymbols = true };
         assembly.Write(outPath, writerParameters);
     }
 
@@ -119,7 +119,7 @@ public class CodeInjectorSetup
         var worker = method.Body.GetILProcessor();
 
         // bool result = LuaPatch.HasPatch(type.Name)
-        var hasPatchRef = assembly.MainModule.Import(typeof (LuaPatch).GetMethod("HasPatch"));
+        var hasPatchRef = assembly.MainModule.Import(typeof(LuaPatch).GetMethod("HasPatch"));
         var current = InsertBefore(worker, firstIns, worker.Create(OpCodes.Ldstr, type.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, method.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Call, hasPatchRef));
@@ -128,14 +128,14 @@ public class CodeInjectorSetup
         current = InsertAfter(worker, current, worker.Create(OpCodes.Brfalse, firstIns));
 
         // else LuaPatch.CallPatch(type.Name, method.Name, args)
-        var callPatchRef = assembly.MainModule.Import(typeof (LuaPatch).GetMethod("CallPatch"));
+        var callPatchMethod = typeof(LuaPatch).GetMethod("CallPatch");
+        var callPatchRef = assembly.MainModule.Import(callPatchMethod);
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, type.Name));
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldstr, method.Name));
         var paramsCount = method.Parameters.Count;
         // 创建 args参数 object[] 集合
         current = InsertAfter(worker, current, worker.Create(OpCodes.Ldc_I4, paramsCount));
-        current = InsertAfter(worker, current,
-            worker.Create(OpCodes.Newarr, assembly.MainModule.Import(typeof (object))));
+        current = InsertAfter(worker, current, worker.Create(OpCodes.Newarr, assembly.MainModule.Import(typeof(object))));
         for (int index = 0; index < paramsCount; index++)
         {
             var argIndex = method.IsStatic ? index : index + 1;
@@ -146,10 +146,15 @@ public class CodeInjectorSetup
             current = InsertAfter(worker, current, worker.Create(OpCodes.Stelem_Ref));
         }
         current = InsertAfter(worker, current, worker.Create(OpCodes.Call, callPatchRef));
-        // 方法有返回值时
-        if (!method.ReturnType.FullName.Equals("System.Void"))
+        var methodReturnVoid = method.ReturnType.FullName.Equals("System.Void");
+        var patchCallReturnVoid = callPatchMethod.ReturnType.FullName.Equals("System.Void");
+        // LuaPatch.CallPatch()有返回值时
+        if (!patchCallReturnVoid)
         {
-            current = InsertAfter(worker, current, worker.Create(OpCodes.Unbox_Any, method.ReturnType));
+            // 方法无返回值, 则需先Pop出栈区中CallPatch()返回的结果
+            if (methodReturnVoid) current = InsertAfter(worker, current, worker.Create(OpCodes.Pop));
+            // 方法有返回值时, 返回值进行拆箱
+            else current = InsertAfter(worker, current, worker.Create(OpCodes.Unbox_Any, method.ReturnType));
         }
         // return
         InsertAfter(worker, current, worker.Create(OpCodes.Ret));
